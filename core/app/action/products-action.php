@@ -11,7 +11,7 @@ if(isset($_GET["opt"]) && $_GET["opt"]=="add"){
 		$product->price_out = $_POST["price_out"];
 		$product->unit = $_POST["unit"];
 		$product->duration = $_POST["duration"];
-		$product->user_id = Session::getUID();
+		$product->user_id = $_SESSION["user_id"];
 		$product->add();
 		header("Location: index.php?view=products&opt=all");
 	}
@@ -28,7 +28,7 @@ else if(isset($_GET["opt"]) && $_GET["opt"]=="update"){
 		$product->unit = $_POST["unit"];
 		$product->duration = $_POST["duration"];
 		$product->category_id = $_POST["category_id"];
-		$product->user_id = Session::getUID();
+		$product->user_id = $_SESSION["user_id"];
 		$product->update();
 		setcookie("prdupd","true");
 		header("Location: index.php?view=products&opt=edit&id=".$_POST["product_id"]);
