@@ -72,6 +72,75 @@
     </div>
 </div>
 
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-dark fw-bold"><i class="bi bi-graph-up-arrow me-2 text-primary"></i> Ventas de los últimos 30 días</h5>
+                <span class="badge bg-light text-dark border">Histórico Mensual</span>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="salesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php
+$labels = [];
+$data = [];
+for($i=29;$i>=0;$i--){
+    $date = date("Y-m-d", strtotime("-$i days"));
+    $labels[] = date("d M", strtotime($date));
+    $data[] = SellData::getTotalByDate($date);
+}
+?>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    const salesChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: <?php echo json_encode($labels); ?>,
+            datasets: [{
+                label: 'Ventas ($)',
+                data: <?php echo json_encode($data); ?>,
+                backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                borderColor: 'rgba(46, 204, 113, 1)',
+                borderWidth: 3,
+                pointBackgroundColor: 'rgba(46, 204, 113, 1)',
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    ticks: {
+                        callback: function(value) { return '$' + value; }
+                    }
+                },
+                x: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+});
+</script>
+
 <div class="row g-4">
     <!-- Monitor de Mesas -->
     <div class="col-lg-8">

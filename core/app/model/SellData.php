@@ -99,9 +99,17 @@ class SellData extends Extra {
 		$sql = "select * from ".self::$tablename." where id<=$start_from and is_applied=1 limit $limit";
 		$query = Executor::doit($sql);
 		return Model::many($query[0],new SellData());
-
 	}
 
+	public static function getTotalByDate($date){
+		$sql = "select operation.q,price_out from operation inner join sell on (sell.id=operation.sell_id) inner join product on (product.id=operation.product_id) where date(sell.created_at)=\"$date\" and is_applied=1";
+		$query = Executor::doit($sql);
+		$total = 0;
+		while($r = $query[0]->fetch_array()){
+			$total += $r['q']*$r['price_out'];
+		}
+		return $total;
+	}
 
 }
 

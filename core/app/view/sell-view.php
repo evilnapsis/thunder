@@ -265,7 +265,17 @@ $products = SellData::getAll();
 								</td>
 								<td><?php echo $sell->created_at; ?></td>
 								<td>
-									<a href="index.php?view=sell&opt=onesell&id=<?php echo $sell->id; ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye me-1"></i> Ver Detalle</a>
+									<div class="btn-group btn-group-sm">
+										<a href="index.php?view=sell&opt=onesell&id=<?php echo $sell->id; ?>" class="btn btn-outline-primary" title="Ver Detalle">
+											<i class="bi bi-eye"></i>
+										</a>
+										<a href="ticket.php?id=<?php echo $sell->id; ?>" target="_blank" class="btn btn-outline-info" title="Imprimir Ticket (Térmico)">
+											<i class="bi bi-receipt"></i>
+										</a>
+										<a href="invoice.php?id=<?php echo $sell->id; ?>" target="_blank" class="btn btn-outline-success" title="Exportar Factura (A4)">
+											<i class="bi bi-file-earmark-pdf"></i>
+										</a>
+									</div>
 								</td>
 							</tr>
 							<?php endforeach; ?>
@@ -294,7 +304,11 @@ $total = 0;
 		<div class="col-lg-10 col-xl-8">
 			<div class="d-flex align-items-center justify-content-between mb-4">
 				<h2 class="mb-0 text-primary fw-bold"><i class="bi bi-receipt-cutoff me-2"></i> Detalle de Venta #<?php echo $sell->id; ?></h2>
-				<a href="index.php?view=sell&opt=all" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Volver al Listado</a>
+				<div class="btn-group shadow-sm">
+					<a href="ticket.php?id=<?php echo $sell->id; ?>" target="_blank" class="btn btn-info text-white fw-bold"><i class="bi bi-receipt me-1"></i> Ticket</a>
+					<a href="invoice.php?id=<?php echo $sell->id; ?>" target="_blank" class="btn btn-success text-white fw-bold"><i class="bi bi-file-earmark-pdf me-1"></i> Factura A4</a>
+					<a href="index.php?view=sell&opt=all" class="btn btn-outline-secondary ms-2 rounded-end"><i class="bi bi-arrow-left me-1"></i> Volver</a>
+				</div>
 			</div>
 
 			<div class="card shadow-sm border-0 mb-4 overflow-hidden">

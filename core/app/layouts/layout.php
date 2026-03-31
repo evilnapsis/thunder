@@ -256,7 +256,7 @@
       </div>
       <footer class="footer px-4">
         <div><a href="https://evilnapsis.com/">Evilnapsis</a> © 2026.</div>
-        <div class="ms-auto">v1.0</div>
+        <div class="ms-auto">3.0</div>
       </footer>
     </div>
     <?php else:?>
