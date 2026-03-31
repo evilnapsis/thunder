@@ -2,8 +2,14 @@
 class Database {
 	public static $db;
 	public static $con;
-	function Database(){
+	public $user;
+	public $host;
+	public $pass;
+	public $ddbb;
+
+	function __construct(){
 		$this->user="root";$this->pass="";$this->host="localhost";$this->ddbb="thunder";
+		//$this->user="evilnaps_admin";$this->pass="l00lapal00za";$this->host="localhost";$this->ddbb="evilnaps_yucatan";
 	}
 
 	function connect(){
