@@ -9,11 +9,12 @@ class Database {
 
 	function __construct(){
 		$this->user="root";$this->pass="";$this->host="localhost";$this->ddbb="thunder";
-		//$this->user="evilnaps_admin";$this->pass="l00lapal00za";$this->host="localhost";$this->ddbb="evilnaps_yucatan";
 	}
 
 	function connect(){
 		$con = new mysqli($this->host,$this->user,$this->pass,$this->ddbb);
+		$con->query("set sql_mode='';") or die(mysqli_error($con));
+
 		return $con;
 	}
 

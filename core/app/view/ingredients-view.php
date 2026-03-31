@@ -53,12 +53,20 @@ if(count($products)>0){
 	<?php
 }else{
 	?>
-	<div class="jumbotron">
-		<h2>No hay Ingredientes</h2>
+	<div class="card shadow-sm border-0 mt-4">
+		<div class="card-body text-center py-5">
+			<div class="mb-4">
+				<i class="bi bi-egg-fried text-muted opacity-25" style="font-size: 5rem;"></i>
+			</div>
+			<h2 class="fw-bold text-dark">No hay ingredientes</h2>
+			<p class="text-muted fs-5 mb-4">Tu inventario de ingredientes está vacío.<br>Agrega ingredientes para poder definir las recetas de tus productos.</p>
+			<a href="index.php?view=ingredients&opt=new" class="btn btn-lg btn-success text-white shadow-sm px-5 fw-bold">
+				<i class="bi bi-plus-circle me-2"></i> Crear Primer Ingrediente
+			</a>
+		</div>
 	</div>
 	<?php
 }
-
 ?>
 	</div>
 </div>

@@ -34,8 +34,9 @@ if($found==true) {
 	$log->description = "Nuevo inicio de sesion";
 	$log->module = "acceso";
 	$log->action = "login";
-	*/
 	$log->add();
+		*/
+
 	// Si todo sale bien
 	print "Cargando ... $user";
 	Core::redir("./");

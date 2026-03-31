@@ -66,9 +66,17 @@ if(count($products)>0){
 	<?php
 }else{
 	?>
-	<div class="jumbotron">
-		<h2>No hay productos</h2>
-		<p>No se han agregado productos a la base de datos, puedes agregar uno dando click en el boton <b>"Agregar Producto"</b>.</p>
+	<div class="card shadow-sm border-0 mt-4">
+		<div class="card-body text-center py-5">
+			<div class="mb-4">
+				<i class="bi bi-box-seam text-muted opacity-25" style="font-size: 5rem;"></i>
+			</div>
+			<h2 class="fw-bold text-dark">No hay productos</h2>
+			<p class="text-muted fs-5 mb-4">Aún no se han agregado productos a la base de datos.<br>Comienza creando tu primer producto para habilitar las ventas.</p>
+			<a href="index.php?view=products&opt=new" class="btn btn-lg btn-primary shadow-sm px-5 fw-bold">
+				<i class="bi bi-plus-circle me-2"></i> Crear Primer Producto
+			</a>
+		</div>
 	</div>
 	<?php
 }
