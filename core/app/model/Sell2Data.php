@@ -1,162 +1,96 @@
 <?php
+/**
+ * Modelo Sell2Data - Representa una compra / reabastecimiento de insumos (tabla `sell2`)
+ */
 class Sell2Data {
 	public static $tablename = "sell2";
 
 	public $id;
 	public $user_id;
-	public $operation_type_id;
+	public $operation_type_id = 1; // 1 = entrada/compra
 	public $created_at;
 
-	public function __construct(){
-		$this->created_at = "NOW()";
+	public function __construct() {
+		$this->user_id = null;
+		$this->operation_type_id = 1;
+		$this->created_at = date("Y-m-d H:i:s");
 	}
 
-	public function getPerson(){ return PersonData::getById($this->person_id);}
-	public function getUser(){ return UserData::getById($this->user_id);}
-
-	public function add(){
-		$sql = "insert into ".self::$tablename." (user_id,created_at) ";
-		$sql .= "value ($this->user_id,$this->created_at)";
-		return Executor::doit($sql);
+	private static function db(): \PDO {
+		return Database::getPdo();
 	}
 
-	public function add_re(){
-		$sql = "insert into ".self::$tablename." (user_id,operation_type_id,created_at) ";
-		$sql .= "value ($this->user_id,1,$this->created_at)";
-		return Executor::doit($sql);
+	public function add() {
+		$stmt = self::db()->prepare(
+			"INSERT INTO " . self::$tablename . " (user_id, operation_type_id, created_at) " .
+			"VALUES (:user_id, :operation_type_id, NOW())"
+		);
+		$stmt->execute([
+			'user_id' => $this->user_id ?: null,
+			'operation_type_id' => (int)($this->operation_type_id ?: 1)
+		]);
+		$this->id = self::db()->lastInsertId();
+		return $this->id;
 	}
 
-	public function add_re_out(){
-		$sql = "insert into ".self::$tablename." (user_id,operation_type_id,created_at) ";
-		$sql .= "value ($this->user_id,2,$this->created_at)";
-		return Executor::doit($sql);
+	public static function delById($id) {
+		$stmt = self::db()->prepare("DELETE FROM operation2 WHERE sell_id = :id");
+		$stmt->execute(['id' => $id]);
+
+		$stmt = self::db()->prepare("DELETE FROM " . self::$tablename . " WHERE id = :id");
+		return $stmt->execute(['id' => $id]);
 	}
 
-	public function add_with_client(){
-		$sql = "insert into ".self::$tablename." (person_id,user_id,created_at) ";
-		$sql .= "value ($this->person_id,$this->user_id,$this->created_at)";
-		return Executor::doit($sql);
+	public function del() {
+		return self::delById($this->id);
 	}
 
-	public function add_re_with_client(){
-		$sql = "insert into ".self::$tablename." (person_id,operation_type_id,user_id,created_at) ";
-		$sql .= "value ($this->person_id,1,$this->user_id,$this->created_at)";
-		return Executor::doit($sql);
+	public static function getById($id) {
+		$stmt = self::db()->prepare("SELECT * FROM " . self::$tablename . " WHERE id = :id");
+		$stmt->execute(['id' => $id]);
+		$stmt->setFetchMode(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
+		return $stmt->fetch() ?: null;
 	}
 
-	public static function delById($id){
-		$sql = "delete from ".self::$tablename." where id=$id";
-		Executor::doit($sql);
+	public static function getAll() {
+		$stmt = self::db()->query("SELECT * FROM " . self::$tablename . " ORDER BY created_at DESC");
+		return $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
 	}
 
-	public function del(){
-		$sql = "delete from ".self::$tablename." where id=$this->id";
-		Executor::doit($sql);
+	public static function getRecent(int $limit = 10): array {
+		$stmt = self::db()->prepare("SELECT * FROM " . self::$tablename . " ORDER BY created_at DESC LIMIT :limit");
+		$stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+		$stmt->execute();
+		return $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
 	}
 
-	public function update_box(){
-		$sql = "update ".self::$tablename." set box_id=$this->box_id where id=$this->id";
-		Executor::doit($sql);
+	public static function getByDateRange($start, $finish): array {
+		$stmt = self::db()->prepare("SELECT * FROM " . self::$tablename . " WHERE DATE(created_at) >= :start AND DATE(created_at) <= :finish ORDER BY created_at DESC");
+		$stmt->execute(['start' => $start, 'finish' => $finish]);
+		return $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
 	}
 
-	public static function getById($id){
-		 $sql = "select * from ".self::$tablename." where id=$id";
-		$query = Executor::doit($sql);
-		$found = null;
-		$data = new Sell2Data();
-		while($r = $query[0]->fetch_array()){
-			$data->id = $r['id'];
-			$data->user_id = $r['user_id'];
-			$data->created_at = $r['created_at'];
-			$found = $data;
-			break;
+	public function getUser() {
+		return $this->user_id ? UserData::getById($this->user_id) : null;
+	}
+
+	public function getOperations(): array {
+		return Operation2Data::getBySellId($this->id);
+	}
+
+	public function getTotal(): float {
+		$ops = $this->getOperations();
+		$total = 0.0;
+		foreach ($ops as $op) {
+			$ing = $op->getIngredient();
+			if ($ing) {
+				$total += (float)$op->q * (float)$ing->price_in;
+			}
 		}
-		return $found;
+		return $total;
 	}
 
-
-
-	public static function getSells(){
-		$sql = "select * from ".self::$tablename." where operation_type_id=2 order by created_at desc";
-		$query = Executor::doit($sql);
-		$array = array();
-		$cnt = 0;
-		while($r = $query[0]->fetch_array()){
-			$array[$cnt] = new Sell2Data();
-			$array[$cnt]->id = $r['id'];
-		$array[$cnt]->person_id = $r['person_id'];
-			$array[$cnt]->user_id = $r['user_id'];
-				$array[$cnt]->created_at = $r['created_at'];
-			$cnt++;
-		}
-		return $array;
+	public function getItemsCount(): int {
+		return count($this->getOperations());
 	}
-
-	public static function getSellsUnBoxed(){
-		$sql = "select * from ".self::$tablename." where operation_type_id=2 and box_id is NULL order by created_at desc";
-		$query = Executor::doit($sql);
-		$array = array();
-		$cnt = 0;
-		while($r = $query[0]->fetch_array()){
-			$array[$cnt] = new Sell2Data();
-			$array[$cnt]->id = $r['id'];
-		$array[$cnt]->person_id = $r['person_id'];
-			$array[$cnt]->user_id = $r['user_id'];
-				$array[$cnt]->created_at = $r['created_at'];
-			$cnt++;
-		}
-		return $array;
-	}
-
-	public static function getByBoxId($id){
-		$sql = "select * from ".self::$tablename." where operation_type_id=2 and box_id=$id order by created_at desc";
-		$query = Executor::doit($sql);
-		$array = array();
-		$cnt = 0;
-		while($r = $query[0]->fetch_array()){
-			$array[$cnt] = new Sell2Data();
-			$array[$cnt]->id = $r['id'];
-		$array[$cnt]->person_id = $r['person_id'];
-			$array[$cnt]->user_id = $r['user_id'];
-				$array[$cnt]->created_at = $r['created_at'];
-			$cnt++;
-		}
-		return $array;
-	}
-
-	public static function getRes(){
-		$sql = "select * from ".self::$tablename." where operation_type_id=1 order by created_at desc";
-		$query = Executor::doit($sql);
-		$array = array();
-		$cnt = 0;
-		while($r = $query[0]->fetch_array()){
-			$array[$cnt] = new Sell2Data();
-			$array[$cnt]->id = $r['id'];
-		$array[$cnt]->person_id = $r['person_id'];
-			$array[$cnt]->user_id = $r['user_id'];
-				$array[$cnt]->created_at = $r['created_at'];
-			$cnt++;
-		}
-		return $array;
-	}
-
-	public static function getAllByPage($start_from,$limit){
-		$sql = "select * from ".self::$tablename." where id<=$start_from limit $limit";
-		$query = Executor::doit($sql);
-		$array = array();
-		$cnt = 0;
-		while($r = $query[0]->fetch_array()){
-			$array[$cnt] = new Sell2Data();
-			$array[$cnt]->id = $r['id'];
-			$array[$cnt]->person_id = $r['person_id'];
-			$array[$cnt]->user_id = $r['user_id'];
-			$array[$cnt]->created_at = $r['created_at'];
-			$cnt++;
-		}
-		return $array;
-	}
-
-
 }
-
-?>

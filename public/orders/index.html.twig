@@ -1,0 +1,112 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Comandas / Cuentas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h3 class="fw-bold mb-0">Comandas</h3>
+    <div class="text-muted small">Cuentas abiertas e historial</div>
+  </div>
+  <a href="{{ base_url }}/monitor" class="btn btn-outline-secondary">
+    <i class="bi bi-grid-3x3-gap me-1"></i> Ir al Monitor
+  </a>
+</div>
+
+<!-- Cuentas Activas -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white py-3">
+    <h6 class="mb-0 fw-bold text-danger"><i class="bi bi-fire me-2"></i>Cuentas Abiertas</h6>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3"># Cuenta</th>
+            <th>Mesa</th>
+            <th>Comensales</th>
+            <th>Mesero</th>
+            <th>Apertura</th>
+            <th class="text-end">Total Acumulado</th>
+            <th class="text-end pe-3">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in activeOrders %}
+            {% set t = o.getTable() %}
+            {% set m = o.getMesero() %}
+            <tr>
+              <td class="ps-3 fw-bold">#{{ o.id }}</td>
+              <td>
+                <span class="badge bg-danger">Mesa {{ t ? t.name : o.item_id }}</span>
+              </td>
+              <td>{{ o.q }} personas</td>
+              <td>{{ m ? m.name : 'Personal' }}</td>
+              <td class="small">{{ o.created_at }}</td>
+              <td class="text-end fw-bold text-danger">${{ o.getTotal()|number_format(2) }}</td>
+              <td class="text-end pe-3">
+                <a href="{{ base_url }}/orders/table/{{ o.item_id }}" class="btn btn-danger btn-xs">
+                  <i class="bi bi-receipt me-1"></i> Ver Comanda
+                </a>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">No hay cuentas abiertas en este momento.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Historial de Cuentas Cerradas -->
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white py-3">
+    <h6 class="mb-0 fw-bold text-success"><i class="bi bi-check2-circle me-2"></i>Historial de Cuentas</h6>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm table-striped table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3"># Cuenta</th>
+            <th>Mesa</th>
+            <th>Comensales</th>
+            <th>Fecha y Hora</th>
+            <th class="text-end">Monto Total</th>
+            <th class="text-center">Estado</th>
+            <th class="text-center pe-3">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in closedOrders|slice(0, 50) %}
+            {% set t = o.getTable() %}
+            <tr>
+              <td class="ps-3 fw-bold text-primary">#{{ o.id }}</td>
+              <td>Mesa {{ t ? t.name : o.item_id }}</td>
+              <td>{{ o.q }}</td>
+              <td class="small text-muted">{{ o.created_at }}</td>
+              <td class="text-end fw-semibold text-success">${{ o.getTotal()|number_format(2) }}</td>
+              <td class="text-center">
+                <span class="badge bg-success">Cobrada</span>
+              </td>
+              <td class="text-center pe-3">
+                <a href="{{ base_url }}/orders/detail/{{ o.id }}" class="btn btn-xs btn-outline-primary" title="Ver Detalle">
+                  <i class="bi bi-eye me-1"></i> Detalle
+                </a>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">No hay cuentas cobradas registradas aún.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

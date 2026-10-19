@@ -1,0 +1,113 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Mesas del Restaurante{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h3 class="fw-bold mb-0">Mesas</h3>
+    <div class="text-muted small">Mesas del restaurante</div>
+  </div>
+  <button type="button" class="btn btn-primary" data-coreui-toggle="modal" data-coreui-target="#tableModal" onclick="prepareTableModal('new')">
+    <i class="bi bi-plus-circle me-1"></i> Nueva Mesa
+  </button>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white py-3">
+    <h6 class="mb-0 fw-bold"><i class="bi bi-table me-2 text-primary"></i>Mesas</h6>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm table-striped table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3"># ID</th>
+            <th>Nombre / Número de Mesa</th>
+            <th>Capacidad de Personas</th>
+            <th>Estado Actual</th>
+            <th class="text-end pe-3">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in tables %}
+            {% set occ = t.isOccupied() %}
+            <tr>
+              <td class="ps-3 fw-bold">#{{ t.id }}</td>
+              <td class="fw-semibold">Mesa {{ t.name }}</td>
+              <td>{{ t.capacity }} personas</td>
+              <td>
+                {% if occ %}
+                  <span class="badge bg-danger">Ocupada</span>
+                {% else %}
+                  <span class="badge bg-success">Libre</span>
+                {% endif %}
+              </td>
+              <td class="text-end pe-3">
+                <button type="button" class="btn btn-warning btn-xs text-white" 
+                        data-coreui-toggle="modal" data-coreui-target="#tableModal"
+                        onclick="prepareTableModal('edit', '{{ t.id }}', '{{ t.name|e('js') }}', '{{ t.capacity }}')">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <a href="{{ base_url }}/tables/delete/{{ t.id }}" class="btn btn-danger btn-xs" onclick="return confirm('¿Seguro de eliminar esta mesa?');">
+                  <i class="bi bi-trash"></i>
+                </a>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="5" class="text-center py-4 text-muted">No hay mesas configuradas.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Mesa -->
+<div class="modal fade" id="tableModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <form method="post" action="{{ base_url }}/tables/save">
+        {{ csrf_field() }}
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="tableModalTitle">Nueva Mesa</h5>
+          <button type="button" class="btn-close" data-coreui-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id" id="tbl_id">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Nombre o Número de Mesa <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="tbl_name" class="form-control form-control-sm" placeholder="Ej: 1, 2, Terraza 1" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Capacidad de Comensales</label>
+            <input type="number" name="capacity" id="tbl_cap" class="form-control form-control-sm" min="1" max="50" value="4">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-coreui-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function prepareTableModal(mode, id, name, cap) {
+  if (mode === 'edit') {
+    document.getElementById('tableModalTitle').textContent = 'Editar Mesa';
+    document.getElementById('tbl_id').value = id;
+    document.getElementById('tbl_name').value = name || '';
+    document.getElementById('tbl_cap').value = cap || 4;
+  } else {
+    document.getElementById('tableModalTitle').textContent = 'Nueva Mesa';
+    document.getElementById('tbl_id').value = '';
+    document.getElementById('tbl_name').value = '';
+    document.getElementById('tbl_cap').value = 4;
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Historial - {{ ingredient.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold mb-0">Historial de Movimientos</h3>
+    <div class="text-muted small">Entradas y salidas de: <strong>{{ ingredient.name }}</strong> (#{{ ingredient.code }})</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ base_url }}/inventory" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Volver a Inventario
+    </a>
+    <a href="{{ base_url }}/supply" class="btn btn-success text-white">
+      <i class="bi bi-cart-plus me-1"></i> Abastecer Insumo
+    </a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card bg-info text-white shadow-sm border-0 p-3">
+      <div class="text-uppercase small fw-bold opacity-75">Existencia Actual</div>
+      <div class="fs-2 fw-bold mt-1">{{ currentStock|number_format(2) }} {{ ingredient.unit }}</div>
+      <small class="opacity-75"><i class="bi bi-box-seam me-1"></i>Stock en almacén</small>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card bg-success text-white shadow-sm border-0 p-3">
+      <div class="text-uppercase small fw-bold opacity-75">Costo Unitario</div>
+      <div class="fs-2 fw-bold mt-1">${{ ingredient.price_in|number_format(2) }}</div>
+      <small class="opacity-75"><i class="bi bi-cash me-1"></i>Precio de compra</small>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card bg-primary text-white shadow-sm border-0 p-3">
+      <div class="text-uppercase small fw-bold opacity-75">Valor Total en Stock</div>
+      <div class="fs-2 fw-bold mt-1">${{ (currentStock * ingredient.price_in)|number_format(2) }}</div>
+      <small class="opacity-75"><i class="bi bi-currency-dollar me-1"></i>Capital invertido</small>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white py-3">
+    <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2 text-info"></i>Movimientos</h6>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover table-striped align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3"># Operación</th>
+            <th>Tipo Movimiento</th>
+            <th class="text-center">Cantidad</th>
+            <th>Folio Compra / Venta</th>
+            <th>Fecha y Hora</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for op in operations %}
+            <tr>
+              <td class="ps-3 text-secondary">#{{ op.id }}</td>
+              <td>
+                {% if op.operation_type_id == 1 %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle">
+                    <i class="bi bi-arrow-down-left me-1"></i>Entrada / Abastecimiento
+                  </span>
+                {% else %}
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                    <i class="bi bi-arrow-up-right me-1"></i>Salida / Consumo
+                  </span>
+                {% endif %}
+              </td>
+              <td class="text-center fw-bold {% if op.operation_type_id == 1 %}text-success{% else %}text-danger{% endif %}">
+                {% if op.operation_type_id == 1 %}+{% else %}-{% endif %}{{ op.q|number_format(2) }} {{ ingredient.unit }}
+              </td>
+              <td>
+                {% if op.sell_id %}
+                  {% if op.operation_type_id == 1 %}
+                    <a href="{{ base_url }}/purchases/detail/{{ op.sell_id }}" class="text-decoration-none fw-bold">Compra #{{ op.sell_id }}</a>
+                  {% else %}
+                    <span class="text-muted">Orden #{{ op.sell_id }}</span>
+                  {% endif %}
+                {% else %}
+                  <span class="text-muted">Ajuste manual</span>
+                {% endif %}
+              </td>
+              <td class="text-muted">{{ op.created_at }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="5" class="text-center py-4 text-muted">
+                No hay movimientos registrados para este insumo.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,348 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Dashboard General{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+  <div>
+    <h3 class="fw-bold mb-0">Dashboard</h3>
+    <div class="text-muted small">Resumen de operaciones del restaurante</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ base_url }}/monitor" class="btn btn-danger text-white fw-semibold">
+      <i class="bi bi-grid-3x3-gap me-1"></i> Monitor de Mesas
+    </a>
+    <a href="{{ base_url }}/orders" class="btn btn-outline-primary">
+      <i class="bi bi-receipt me-1"></i> Cuentas / Comandas
+    </a>
+    <a href="{{ base_url }}/supply" class="btn btn-outline-success">
+      <i class="bi bi-cart-plus me-1"></i> Reabastecer Insumos
+    </a>
+  </div>
+</div>
+
+<!-- Tarjetas Contadores KPI -->
+<div class="row g-3 mb-4">
+  <!-- Ventas Hoy -->
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100 shadow-sm rounded-3 text-white border-0 p-3" style="background-color: #198754;">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-white-50 small fw-semibold text-uppercase">Ventas de Hoy</div>
+          <h3 class="fw-bold mb-0 mt-1">${{ salesToday|number_format(2) }}</h3>
+          <small class="text-white-50 mt-1 d-block">{{ ordersTodayCount }} cuentas cobradas</small>
+        </div>
+        <i class="bi bi-currency-dollar text-white opacity-75" style="font-size: 2.5rem;"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mesas en Piso -->
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100 shadow-sm rounded-3 text-white border-0 p-3" style="background-color: #dc3545;">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-white-50 small fw-semibold text-uppercase">Ocupación en Piso</div>
+          <h3 class="fw-bold mb-0 mt-1">{{ occupiedTables }} <span class="fs-6 opacity-75 fw-normal">/ {{ totalTables }} mesas</span></h3>
+          <small class="text-white-50 mt-1 d-block">Consumo: ${{ activeFloorTotal|number_format(2) }}</small>
+        </div>
+        <i class="bi bi-people-fill text-white opacity-75" style="font-size: 2.4rem;"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compras del Mes -->
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100 shadow-sm rounded-3 text-white border-0 p-3" style="background-color: #0d6efd;">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-white-50 small fw-semibold text-uppercase">Compras del Mes</div>
+          <h3 class="fw-bold mb-0 mt-1">${{ purchasesMonthTotal|number_format(2) }}</h3>
+          <small class="text-white-50 mt-1 d-block">{{ purchasesMonthCount }} compras registradas</small>
+        </div>
+        <i class="bi bi-cart-check-fill text-white opacity-75" style="font-size: 2.4rem;"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menú & Stock -->
+  <div class="col-sm-6 col-xl-3">
+    <div class="card h-100 shadow-sm rounded-3 text-white border-0 p-3" style="background-color: #e67e22;">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-white-50 small fw-semibold text-uppercase">Menú & Almacén</div>
+          <h3 class="fw-bold mb-0 mt-1">{{ totalProducts }} <span class="fs-6 opacity-75 fw-normal">platillos</span></h3>
+          <small class="text-white-50 mt-1 d-block">
+            {% if lowStockCount > 0 %}
+              <span class="badge bg-white text-dark">{{ lowStockCount }} bajo stock</span>
+            {% else %}
+              <span>{{ totalIngredients }} ingredientes</span>
+            {% endif %}
+          </small>
+        </div>
+        <i class="bi bi-box-seam-fill text-white opacity-75" style="font-size: 2.4rem;"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Fila de Gráfica de Ventas y Estado de Mesas -->
+<div class="row g-4 mb-4">
+  <!-- Gráfica de Ventas de los Últimos Días -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm rounded-3 bg-white h-100" style="border-top: 4px solid #10b981 !important;">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0 text-dark">
+          <i class="bi bi-graph-up-arrow me-2 text-success"></i>Ventas de los Últimos 14 Días ($)
+        </h6>
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+          <i class="bi bi-calendar-range me-1"></i>Últimos 14 Días
+        </span>
+      </div>
+      <div class="card-body p-4">
+        <div style="height: 280px; width: 100%;">
+          <canvas id="salesTrendChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado Rápido del Piso -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm rounded-3 bg-white h-100" style="border-top: 4px solid #ef4444 !important;">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0 text-dark">
+          <i class="bi bi-pie-chart-fill me-2 text-danger"></i>Disponibilidad de Mesas
+        </h6>
+        <a href="{{ base_url }}/monitor" class="btn btn-outline-danger btn-xs">Ver Piso</a>
+      </div>
+      <div class="card-body d-flex flex-column justify-content-center align-items-center p-4">
+        <div style="width: 100%; max-width: 220px; height: 200px;">
+          <canvas id="tablesPieChart"></canvas>
+        </div>
+        <div class="w-100 mt-3 pt-2 border-top">
+          <div class="row text-center small">
+            <div class="col-6 border-end">
+              <span class="d-inline-block rounded-circle me-1" style="width: 10px; height: 10px; background-color: #dc3545;"></span>
+              <span class="text-muted">Ocupadas:</span>
+              <div class="fs-5 fw-bold text-danger">{{ occupiedTables }}</div>
+            </div>
+            <div class="col-6">
+              <span class="d-inline-block rounded-circle me-1" style="width: 10px; height: 10px; background-color: #198754;"></span>
+              <span class="text-muted">Disponibles:</span>
+              <div class="fs-5 fw-bold text-success">{{ freeTables }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Fila de Listados Recientes: Ventas y Compras -->
+<div class="row g-4 mb-4">
+  <!-- Listado de Ventas Recientes -->
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm rounded-3 bg-white h-100" style="border-top: 4px solid #10b981 !important;">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0 text-dark">
+          <i class="bi bi-receipt me-2 text-success"></i>Ventas Recientes
+        </h6>
+        <a href="{{ base_url }}/orders" class="btn btn-outline-secondary btn-xs">
+          Ver todas <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3"># Orden</th>
+                <th>Mesa</th>
+                <th>Mesero</th>
+                <th class="text-end">Total</th>
+                <th class="text-center">Fecha</th>
+                <th class="text-center pe-3">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in recentSales %}
+                <tr>
+                  <td class="ps-3 fw-bold text-primary">#{{ s.id }}</td>
+                  <td>
+                    <span class="badge bg-secondary">Mesa {{ s.getTable().name|default('N/A') }}</span>
+                  </td>
+                  <td>
+                    <span class="text-dark">{{ s.getMesero().name|default('N/A') }}</span>
+                  </td>
+                  <td class="text-end fw-bold text-success">${{ s.getTotal()|number_format(2) }}</td>
+                  <td class="text-center text-muted" style="font-size: 0.75rem;">
+                    {{ s.created_at|date("d/m H:i") }}
+                  </td>
+                  <td class="text-center pe-3">
+                    <a href="{{ base_url }}/orders/detail/{{ s.id }}" class="btn btn-xs btn-outline-primary" title="Ver Detalle">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox fs-3 d-block text-muted opacity-50 mb-1"></i>
+                    No hay ventas registradas recientemente.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Listado de Compras Recientes -->
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm rounded-3 bg-white h-100" style="border-top: 4px solid #3b82f6 !important;">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0 text-dark">
+          <i class="bi bi-cart-check me-2 text-primary"></i>Compras Recientes (Insumos)
+        </h6>
+        <div class="d-flex gap-2">
+          <a href="{{ base_url }}/supply" class="btn btn-success btn-xs text-white">
+            <i class="bi bi-plus-lg me-1"></i> Abastecer
+          </a>
+          <a href="{{ base_url }}/purchases" class="btn btn-outline-secondary btn-xs">
+            Ver todas <i class="bi bi-arrow-right ms-1"></i>
+          </a>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3"># Compra</th>
+                <th>Usuario</th>
+                <th class="text-center">Insumos</th>
+                <th class="text-end">Total</th>
+                <th class="text-center">Fecha</th>
+                <th class="text-center pe-3">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in recentPurchases %}
+                <tr>
+                  <td class="ps-3 fw-bold text-primary">#{{ p.id }}</td>
+                  <td>
+                    <span class="text-dark">{{ p.getUser().name|default('Admin') }}</span>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge bg-info-subtle text-info border">{{ p.getItemsCount() }} items</span>
+                  </td>
+                  <td class="text-end fw-bold text-primary">${{ p.getTotal()|number_format(2) }}</td>
+                  <td class="text-center text-muted" style="font-size: 0.75rem;">
+                    {{ p.created_at|date("d/m H:i") }}
+                  </td>
+                  <td class="text-center pe-3">
+                    <a href="{{ base_url }}/purchases/detail/{{ p.id }}" class="btn btn-xs btn-outline-info" title="Ver Detalle">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox fs-3 d-block text-muted opacity-50 mb-1"></i>
+                    No hay compras registradas recientemente.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // 1. Gráfica de Tendencia de Ventas (Chart.js)
+  const salesCtx = document.getElementById('salesTrendChart');
+  if (salesCtx) {
+    const labels = {{ chartLabels|json_encode|raw }};
+    const amounts = {{ chartAmounts|json_encode|raw }};
+
+    new Chart(salesCtx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Ventas ($)',
+          data: amounts,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.12)',
+          fill: true,
+          tension: 0.35,
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointBackgroundColor: '#10b981',
+          pointHoverRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return '$' + Number(context.raw).toLocaleString('en-US', { minimumFractionDigits: 2 });
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) { return '$' + value; }
+            },
+            grid: { color: 'rgba(0, 0, 0, 0.05)' }
+          },
+          x: {
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  // 2. Gráfica de Dona: Disponibilidad de Mesas
+  const tablesCtx = document.getElementById('tablesPieChart');
+  if (tablesCtx) {
+    new Chart(tablesCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Ocupadas', 'Disponibles'],
+        datasets: [{
+          data: [{{ occupiedTables }}, {{ freeTables }}],
+          backgroundColor: ['#dc3545', '#198754'],
+          borderWidth: 2,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        cutout: '70%'
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

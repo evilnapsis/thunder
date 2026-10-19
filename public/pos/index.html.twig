@@ -1,0 +1,270 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Punto de Venta{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h3 class="fw-bold mb-0">Punto de Venta</h3>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ base_url }}/monitor" class="btn btn-outline-secondary">
+      <i class="bi bi-grid-3x3-gap me-1"></i> Monitor de Mesas
+    </a>
+    <a href="{{ base_url }}/orders" class="btn btn-outline-primary">
+      <i class="bi bi-receipt me-1"></i> Cuentas
+    </a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Columna Izquierda: Buscador y Grid de Productos -->
+  <div class="col-lg-7 col-xl-8">
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-body p-3">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-7">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+              <input type="text" id="searchProduct" class="form-control form-control-sm" placeholder="Buscar por nombre o código..." autocomplete="off">
+              <button class="btn btn-outline-secondary btn-xs" type="button" id="clearSearch">Limpiar</button>
+            </div>
+          </div>
+          <div class="col-md-5">
+            <div class="d-flex gap-1 overflow-auto pb-1" id="categoryFilters">
+              <button type="button" class="btn btn-xs btn-primary category-btn active" data-category="">Todos</button>
+              {% for c in categories %}
+                <button type="button" class="btn btn-xs btn-outline-secondary category-btn text-nowrap" data-category="{{ c.id }}">{{ c.name }}</button>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grid de Productos -->
+    <div class="row g-3" id="productsGrid">
+      {% for p in products %}
+        {% set cat = p.getCategory() %}
+        <div class="col-6 col-sm-6 col-md-4 col-xl-3 product-item" 
+             data-name="{{ p.name|lower }}" 
+             data-code="{{ p.code|lower }}" 
+             data-category="{{ p.category_id }}">
+          <div class="card h-100 shadow-sm border-0 product-card overflow-hidden">
+            <div class="position-relative bg-light text-center" style="height: 120px;">
+              {% if p.image and file_exists('storage/products/' ~ p.image) %}
+                <img src="storage/products/{{ p.image }}" alt="{{ p.name }}" class="w-100 h-100" style="object-fit: cover;">
+              {% else %}
+                <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted">
+                  <i class="bi bi-cup-hot" style="font-size: 2.5rem;"></i>
+                </div>
+              {% endif %}
+              {% if cat %}
+                <span class="badge bg-dark bg-opacity-75 position-absolute top-0 end-0 m-2">{{ cat.name }}</span>
+              {% endif %}
+              <span class="badge bg-success bg-gradient position-absolute bottom-0 start-0 m-2 px-2 py-1 shadow-sm fw-bold" style="font-size: 0.85rem; letter-spacing: 0.3px;">
+                ${{ p.price_out|number_format(2) }}
+              </span>
+            </div>
+            <div class="card-body p-2 d-flex flex-column">
+              <div class="fw-bold small text-truncate mb-1" title="{{ p.name }}">{{ p.name }}</div>
+              <form method="post" action="{{ base_url }}/pos/cart/add" class="add-to-cart-form mt-auto pt-1">
+                {{ csrf_field() }}
+                <input type="hidden" name="product_id" value="{{ p.id }}">
+                <div class="input-group input-group-sm">
+                  <input type="number" name="q" class="form-control form-control-sm text-center" value="1" min="1" step="1" style="max-width: 55px;">
+                  <button type="submit" class="btn btn-primary flex-grow-1">
+                    <i class="bi bi-plus-lg me-1"></i> Agregar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <div class="col-12 text-center py-5 text-muted">
+          <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+          <p>No hay platillos activos en el menú.</p>
+        </div>
+      {% endfor %}
+    </div>
+    <div id="noResults" class="text-center py-5 text-muted d-none">
+      <i class="bi bi-search fs-1 d-block mb-2"></i>
+      <p>No se encontraron productos coincidentes.</p>
+    </div>
+  </div>
+
+  <!-- Columna Derecha: Carrito de Venta y Opciones de Finalizar -->
+  <div class="col-lg-5 col-xl-4">
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-cart3 me-2 text-primary"></i>Carrito de Venta</h6>
+        {% if cartItems|length > 0 %}
+          <a href="{{ base_url }}/pos/cart/clear" class="btn btn-outline-danger btn-xs" onclick="return confirm('¿Seguro de vaciar el carrito?');">
+            <i class="bi bi-trash me-1"></i> Cancelar Venta
+          </a>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% if cartItems|length > 0 %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="ps-2" style="width: 70px;">Cant.</th>
+                  <th>Producto</th>
+                  <th class="text-end">Precio</th>
+                  <th class="text-end">Subtotal</th>
+                  <th class="text-end pe-2" style="width: 40px;"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in cartItems %}
+                  {% set p = item.product %}
+                  <tr>
+                    <td class="ps-2">
+                      <form method="post" action="{{ base_url }}/pos/cart/update" class="d-inline">
+                        {{ csrf_field() }}
+                        <input type="hidden" name="product_id" value="{{ p.id }}">
+                        <input type="number" name="q" value="{{ item.q }}" min="1" step="1" 
+                               class="form-control form-control-sm text-center px-1" 
+                               style="width: 50px; height: 26px; font-size: 0.8rem;" 
+                               onchange="this.form.submit()">
+                      </form>
+                    </td>
+                    <td>
+                      <div class="fw-semibold small text-truncate" style="max-width: 130px;" title="{{ p.name }}">{{ p.name }}</div>
+                    </td>
+                    <td class="text-end small">${{ p.price_out|number_format(2) }}</td>
+                    <td class="text-end fw-bold small text-dark">${{ item.subtotal|number_format(2) }}</td>
+                    <td class="text-end pe-2">
+                      <form method="post" action="{{ base_url }}/pos/cart/remove" class="d-inline">
+                        {{ csrf_field() }}
+                        <input type="hidden" name="product_id" value="{{ p.id }}">
+                        <button type="submit" class="btn btn-xs btn-outline-danger p-1 line-height-1" title="Quitar">
+                          <i class="bi bi-x-lg"></i>
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Total -->
+          <div class="p-3 bg-light rounded mt-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fs-6 text-muted fw-semibold">TOTAL:</span>
+              <span class="fs-3 fw-bold text-primary">${{ total|number_format(2) }}</span>
+            </div>
+          </div>
+
+          <!-- Opciones para Finalizar Venta ya existentes -->
+          <div class="pt-3 border-top mt-3">
+            <form method="post" action="{{ base_url }}/pos/checkout">
+              {{ csrf_field() }}
+              <div class="mb-2">
+                <label class="form-label small fw-bold mb-1">Mesa <span class="text-danger">*</span></label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white"><i class="bi bi-grid-3x3-gap"></i></span>
+                  <select name="mesa" class="form-select form-select-sm" required>
+                    <option value="">-- SELECCIONAR MESA --</option>
+                    {% for t in tables %}
+                      {% set occ = t.isOccupied() %}
+                      <option value="{{ t.id }}">Mesa {{ t.name }} (Capacidad: {{ t.capacity }}) {% if occ %}- En consumo{% else %}- Libre{% endif %}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label small fw-bold mb-1">Mesero <span class="text-danger">*</span></label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white"><i class="bi bi-person-badge"></i></span>
+                  <select name="mesero_id" class="form-select form-select-sm" required>
+                    <option value="">-- SELECCIONAR MESERO --</option>
+                    {% for m in meseros %}
+                      <option value="{{ m.id }}" {% if curr_user and curr_user.id == m.id %}selected{% endif %}>{{ m.name }} {{ m.lastname }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label small fw-bold mb-1">Personas <span class="text-danger">*</span></label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white"><i class="bi bi-people"></i></span>
+                  <input type="number" name="q" class="form-control form-control-sm" value="1" min="1" required>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-success w-100 py-2 fs-6 text-white fw-bold shadow-sm">
+                <i class="bi bi-check2-circle me-1"></i> Finalizar Venta
+              </button>
+            </form>
+          </div>
+        {% else %}
+          <div class="card-body p-4 text-center text-muted">
+            <i class="bi bi-cart-x fs-1 d-block mb-2 text-muted opacity-50"></i>
+            <h6 class="fw-bold mb-1">El carrito está vacío</h6>
+            <p class="small text-muted mb-0">Selecciona platillos del catálogo para comenzar la venta.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+$(document).ready(function(){
+  var activeCategory = "";
+  var searchQuery = "";
+
+  function filterProducts() {
+    var query = searchQuery.trim().toLowerCase();
+    var visibleCount = 0;
+
+    $('.product-item').each(function(){
+      var name = $(this).data('name') || '';
+      var code = $(this).data('code') || '';
+      var cat = $(this).data('category') ? String($(this).data('category')) : '';
+
+      var matchQuery = (query === "" || name.indexOf(query) !== -1 || code.indexOf(query) !== -1);
+      var matchCat = (activeCategory === "" || cat === activeCategory);
+
+      if (matchQuery && matchCat) {
+        $(this).show();
+        visibleCount++;
+      } else {
+        $(this).hide();
+      }
+    });
+
+    if (visibleCount === 0) {
+      $('#noResults').removeClass('d-none');
+    } else {
+      $('#noResults').addClass('d-none');
+    }
+  }
+
+  $('#searchProduct').on('keyup', function(){
+    searchQuery = $(this).val();
+    filterProducts();
+  });
+
+  $('#clearSearch').on('click', function(){
+    $('#searchProduct').val('');
+    searchQuery = '';
+    filterProducts();
+  });
+
+  $('.category-btn').on('click', function(){
+    $('.category-btn').removeClass('btn-primary active').addClass('btn-outline-secondary');
+    $(this).removeClass('btn-outline-secondary').addClass('btn-primary active');
+    activeCategory = String($(this).data('category') || '');
+    filterProducts();
+  });
+});
+</script>
+{% endblock %}

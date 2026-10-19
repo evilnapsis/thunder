@@ -1,71 +1,64 @@
 <?php
-class CategoryData extends Extra {
+/**
+ * Modelo CategoryData - Categorías del menú de alimentos
+ */
+class CategoryData {
 	public static $tablename = "category";
 
-	public $id, $name, $is_active;
+	public $id;
+	public $name;
+	public $is_active = 1;
 
 	public function __construct(){
 		$this->name = "";
+		$this->is_active = 1;
+	}
+
+	private static function db(): \PDO {
+		return Database::getPdo();
 	}
 
 	public function add(){
-		$sql = "insert into ".self::$tablename." (name) ";
-		$sql .= "value (\"$this->name\")";
-		Executor::doit($sql);
+		$stmt = self::db()->prepare("INSERT INTO " . self::$tablename . " (name, is_active) VALUES (:name, :is_active)");
+		$stmt->execute([
+			'name' => $this->name,
+			'is_active' => $this->is_active ? 1 : 0
+		]);
+		$this->id = self::db()->lastInsertId();
 	}
 
 	public function update(){
-		$sql = "update ".self::$tablename." set name=\"$this->name\" where id=$this->id";
-		Executor::doit($sql);
+		$stmt = self::db()->prepare("UPDATE " . self::$tablename . " SET name = :name, is_active = :is_active WHERE id = :id");
+		$stmt->execute([
+			'name' => $this->name,
+			'is_active' => $this->is_active ? 1 : 0,
+			'id' => $this->id
+		]);
+	}
+
+	public static function delById($id){
+		$stmt = self::db()->prepare("DELETE FROM " . self::$tablename . " WHERE id = :id");
+		$stmt->execute(['id' => $id]);
 	}
 
 	public function del(){
-		$sql = "delete from ".self::$tablename." where id=$this->id";
-		Executor::doit($sql);
-	}
-
-	public function hide(){
-		$sql = "update ".self::$tablename." set is_active=0 where id=$this->id";
-		Executor::doit($sql);
-	}
-
-	public function active(){
-		$sql = "update ".self::$tablename." set is_active=1 where id=$this->id";
-		Executor::doit($sql);
+		self::delById($this->id);
 	}
 
 	public static function getById($id){
-		$sql = "select * from ".self::$tablename." where id=$id";
-		$query = Executor::doit($sql);
-		return Model::one($query[0],new CategoryData());
+		$stmt = self::db()->prepare("SELECT * FROM " . self::$tablename . " WHERE id = :id");
+		$stmt->execute(['id' => $id]);
+		$stmt->setFetchMode(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
+		return $stmt->fetch() ?: null;
 	}
-
-	public static function getByName($name){
-		 $sql = "select * from ".self::$tablename." where name=\"$name\"";
-		$query = Executor::doit($sql);
-		return Model::one($query[0],new CategoryData());
-	}
-
 
 	public static function getAll(){
-		$sql = "select * from ".self::$tablename."";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new CategoryData());
+		$stmt = self::db()->query("SELECT * FROM " . self::$tablename . " ORDER BY name ASC");
+		return $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
 	}
 
 	public static function getAllActive(){
-		$sql = "select * from ".self::$tablename." where is_active=1";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new CategoryData());
+		$stmt = self::db()->query("SELECT * FROM " . self::$tablename . " WHERE is_active = 1 ORDER BY name ASC");
+		return $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
 	}
-
-	public static function getAllUnActive(){
-		$sql = "select * from ".self::$tablename." where is_active=0";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new CategoryData());
-	}
-
-
 }
-
-?>

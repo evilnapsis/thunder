@@ -1,0 +1,176 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Comanda - Mesa {{ table.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <div class="d-flex align-items-center gap-2">
+      <h3 class="fw-bold mb-0">Comanda - Mesa {{ table.name }}</h3>
+      {% if order %}
+        <span class="badge bg-danger">Cuenta Abierta #{{ order.id }}</span>
+      {% else %}
+        <span class="badge bg-success">Mesa Libre</span>
+      {% endif %}
+    </div>
+    <div class="text-muted small">Capacidad: {{ table.capacity }} personas {% if order %} | Comensales: {{ order.q }} | Inicio: {{ order.created_at }}{% endif %}</div>
+  </div>
+  <div class="d-flex gap-2">
+    {% if order %}
+      <button type="button" class="btn btn-primary" data-coreui-toggle="modal" data-coreui-target="#addDishModal">
+        <i class="bi bi-plus-circle me-1"></i> Agregar Platillo
+      </button>
+      <button type="button" class="btn btn-outline-secondary" onclick="window.print();">
+        <i class="bi bi-printer me-1"></i> Precuenta
+      </button>
+    {% endif %}
+    <a href="{{ base_url }}/monitor" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Monitor de Mesas
+    </a>
+  </div>
+</div>
+
+{% if order %}
+  {% set items = order.getOperations() %}
+  {% set total = order.getTotal() %}
+
+  <div class="row g-4">
+    <!-- Detalle de Consumo -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-receipt-cutoff me-2 text-danger"></i>Consumo</h6>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm table-striped table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="ps-3">Cant.</th>
+                  <th>Platillo / Bebida</th>
+                  <th class="text-end">Precio Unit.</th>
+                  <th class="text-end">Subtotal</th>
+                  <th class="text-end pe-3">Quitar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for op in items %}
+                  {% set p = op.getProduct() %}
+                  <tr>
+                    <td class="ps-3 fw-bold">{{ op.q|number_format(0) }}</td>
+                    <td>
+                      {% if p %}
+                        <span class="fw-semibold">{{ p.name }}</span>
+                        {% set cat = p.getCategory() %}
+                        {% if cat %}
+                          <span class="badge bg-light text-muted border ms-1">{{ cat.name }}</span>
+                        {% endif %}
+                      {% else %}
+                        <span class="text-muted">Platillo #{{ op.product_id }}</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-end">${{ p ? p.price_out|number_format(2) : '0.00' }}</td>
+                    <td class="text-end fw-semibold">${{ p ? (op.q * p.price_out)|number_format(2) : '0.00' }}</td>
+                    <td class="text-end pe-3">
+                      <a href="{{ base_url }}/orders/remove-item/{{ op.id }}?table_id={{ table.id }}" class="btn btn-danger btn-xs" onclick="return confirm('¿Quitar este platillo?');">
+                        <i class="bi bi-x-lg"></i>
+                      </a>
+                    </td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">Aún no se han agregado platillos a esta comanda.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen y Cobro -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-cash-coin me-2 text-success"></i>Resumen de Cuenta</h6>
+        </div>
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted">Total de Artículos:</span>
+            <span class="fw-semibold">{{ items|length }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-3 border-top pt-2">
+            <span class="fs-5 fw-bold">TOTAL:</span>
+            <span class="fs-4 fw-bold text-danger">${{ total|number_format(2) }}</span>
+          </div>
+
+          <form method="post" action="{{ base_url }}/orders/{{ order.id }}/checkout" onsubmit="return confirm('¿Confirmar cobro y liberar la mesa {{ table.name }}?');">
+            {{ csrf_field() }}
+            <button type="submit" class="btn btn-success w-100 py-2 fs-6 text-white mb-2" {% if items|length == 0 %}disabled{% endif %}>
+              <i class="bi bi-check-circle me-1"></i> Cobrar y Cerrar Mesa
+            </button>
+          </form>
+
+          <a href="{{ base_url }}/orders/{{ order.id }}/cancel" class="btn btn-outline-danger w-100" onclick="return confirm('¿Seguro de cancelar toda la comanda? Se eliminarán los consumos.');">
+            <i class="bi bi-trash me-1"></i> Cancelar Comanda
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Agregar Platillo -->
+  <div class="modal fade" id="addDishModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="post" action="{{ base_url }}/orders/{{ order.id }}/add-item">
+          {{ csrf_field() }}
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Agregar al Pedido</h5>
+            <button type="button" class="btn-close" data-coreui-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Seleccionar Platillo / Bebida <span class="text-danger">*</span></label>
+              <select name="product_id" class="form-select select2" required>
+                <option value="">-- Seleccionar --</option>
+                {% for p in products %}
+                  <option value="{{ p.id }}">{{ p.name }} - ${{ p.price_out|number_format(2) }} ({{ p.unit }})</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Cantidad</label>
+              <input type="number" name="quantity" class="form-control" min="1" step="1" value="1" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-coreui-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Agregar a Comanda</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% else %}
+  <div class="card shadow-sm border-0 text-center py-5">
+    <div class="card-body">
+      <i class="bi bi-table fs-1 text-muted mb-3 d-block"></i>
+      <h5 class="fw-bold">La Mesa {{ table.name }} está actualmente libre</h5>
+      <p class="text-muted">Abre la mesa para comenzar a tomar los pedidos de los comensales.</p>
+      <form method="post" action="{{ base_url }}/orders/open" class="d-inline-block" style="max-width: 250px;">
+        {{ csrf_field() }}
+        <input type="hidden" name="table_id" value="{{ table.id }}">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Cantidad de Comensales</label>
+          <input type="number" name="q" class="form-control text-center" min="1" max="20" value="{{ table.capacity }}">
+        </div>
+        <button type="submit" class="btn btn-success w-100 text-white">
+          <i class="bi bi-plus-circle me-1"></i> Abrir Mesa
+        </button>
+      </form>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

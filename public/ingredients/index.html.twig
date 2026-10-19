@@ -1,0 +1,96 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Catálogo de Ingredientes{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold mb-0">Ingredientes</h3>
+    <div class="text-muted small">Catálogo de insumos e ingredientes</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ base_url }}/ingredients/new" class="btn btn-primary text-white">
+      <i class="bi bi-plus-circle me-1"></i> Nuevo Ingrediente
+    </a>
+    <a href="{{ base_url }}/inventory" class="btn btn-outline-info">
+      <i class="bi bi-box-seam me-1"></i> Ver Inventario
+    </a>
+    <a href="{{ base_url }}/supply" class="btn btn-outline-success">
+      <i class="bi bi-cart-plus me-1"></i> Abastecer
+    </a>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <h6 class="mb-0 fw-bold"><i class="bi bi-egg-fried me-2 text-warning"></i>Ingredientes</h6>
+    <span class="badge bg-secondary">{{ ingredients|length }} registrados</span>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover table-striped align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Código</th>
+            <th>Nombre del Insumo</th>
+            <th>Unidad</th>
+            <th class="text-end">Costo Compra</th>
+            <th class="text-end">Precio Ref.</th>
+            <th class="text-center">Stock Disponible</th>
+            <th class="text-center">Estado</th>
+            <th class="text-center pe-3">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ing in ingredients %}
+            {% set stock = ing.getStock() %}
+            <tr>
+              <td class="ps-3 fw-bold text-secondary">#{{ ing.code }}</td>
+              <td class="fw-semibold text-dark">{{ ing.name }}</td>
+              <td><span class="badge bg-light text-dark border">{{ ing.unit }}</span></td>
+              <td class="text-end fw-bold text-dark">${{ ing.price_in|number_format(2) }}</td>
+              <td class="text-end text-muted">${{ ing.price_out|number_format(2) }}</td>
+              <td class="text-center">
+                <span class="fw-bold {% if stock <= 2 %}text-danger{% elseif stock <= 5 %}text-warning{% else %}text-success{% endif %}">
+                  {{ stock|number_format(2) }} {{ ing.unit }}
+                </span>
+              </td>
+              <td class="text-center">
+                {% if ing.is_active %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle">Activo</span>
+                {% else %}
+                  <span class="badge bg-secondary-subtle text-secondary border">Inactivo</span>
+                {% endif %}
+              </td>
+              <td class="text-center pe-3">
+                <div class="btn-group">
+                  <a href="{{ base_url }}/inventory/history/{{ ing.id }}" class="btn btn-xs btn-outline-info" title="Historial">
+                    <i class="bi bi-clock-history"></i>
+                  </a>
+                  <a href="{{ base_url }}/ingredients/edit/{{ ing.id }}" class="btn btn-xs btn-outline-warning" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a href="{{ base_url }}/ingredients/delete/{{ ing.id }}" class="btn btn-xs btn-outline-danger" title="Eliminar" onclick="return confirm('¿Seguro que deseas eliminar este ingrediente?')">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="8" class="text-center py-5 text-muted">
+                <i class="bi bi-egg-fried fs-1 d-block text-muted opacity-50 mb-2"></i>
+                <h5 class="fw-bold text-dark">No hay ingredientes registrados</h5>
+                <p class="small text-muted mb-3">Agrega ingredientes e insumos para gestionar el stock y las recetas de cocina.</p>
+                <a href="{{ base_url }}/ingredients/new" class="btn btn-sm btn-primary">
+                  <i class="bi bi-plus-circle me-1"></i> Crear Primer Ingrediente
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

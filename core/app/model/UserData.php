@@ -1,90 +1,130 @@
 <?php
-class UserData extends Extra {
+/**
+ * Modelo UserData para Thunder.
+ */
+class UserData {
 	public static $tablename = "user";
-
-	public $id, $name, $lastname, $email, $image, $password, $is_active, $created_at, $username, $comision, $kind, $status, $stock_id, $is_admin, $is_mesero, $is_cajero;
+	public $id;
+	public $name;
+	public $lastname;
+	public $username;
+	public $email;
+	public $password;
+	public $image;
+	public $is_active = 1;
+	public $is_admin = 0;
+	public $is_mesero = 0;
+	public $is_cajero = 0;
+	public $created_at;
 
 	public function __construct(){
 		$this->name = "";
 		$this->lastname = "";
+		$this->username = "";
 		$this->email = "";
 		$this->image = "";
 		$this->password = "";
 		$this->is_active = 1;
-		$this->created_at = "NOW()";
+		$this->is_admin = 0;
+		$this->is_mesero = 0;
+		$this->is_cajero = 0;
+		$this->created_at = date("Y-m-d H:i:s");
+	}
+
+	private static function db(): \PDO {
+		return Database::getPdo();
 	}
 
 	public function add(){
-		$sql = "insert into ".self::$tablename." (name,lastname,email,password,created_at) ";
-		$sql .= "value (\"$this->name\",\"$this->lastname\",\"$this->email\",\"$this->password\",$this->created_at)";
-		Executor::doit($sql);
-	}
-	public function add_admin(){
-		$sql = "insert into ".self::$tablename." (name,lastname,email,password,is_admin,created_at) ";
-		$sql .= "value (\"$this->name\",\"$this->lastname\",\"$this->email\",\"$this->password\",1,$this->created_at)";
-		Executor::doit($sql);
+		$stmt = self::db()->prepare(
+			"INSERT INTO " . self::$tablename . " (name, lastname, username, email, password, image, is_active, is_admin, is_mesero, is_cajero, created_at) " .
+			"VALUES (:name, :lastname, :username, :email, :password, :image, :is_active, :is_admin, :is_mesero, :is_cajero, NOW())"
+		);
+		$stmt->execute([
+			'name' => $this->name,
+			'lastname' => $this->lastname,
+			'username' => $this->username,
+			'email' => $this->email,
+			'password' => $this->password,
+			'image' => $this->image ?: '',
+			'is_active' => $this->is_active ? 1 : 0,
+			'is_admin' => $this->is_admin ? 1 : 0,
+			'is_mesero' => $this->is_mesero ? 1 : 0,
+			'is_cajero' => $this->is_cajero ? 1 : 0,
+		]);
+		$this->id = self::db()->lastInsertId();
 	}
 
-	public function add_cajero(){
-		$sql = "insert into ".self::$tablename." (name,lastname,email,password,is_cajero,created_at) ";
-		$sql .= "value (\"$this->name\",\"$this->lastname\",\"$this->email\",\"$this->password\",1,$this->created_at)";
-		Executor::doit($sql);
-	}
-
-	public function add_mesero(){
-		$sql = "insert into ".self::$tablename." (name,lastname,email,password,is_mesero,created_at) ";
-		$sql .= "value (\"$this->name\",\"$this->lastname\",\"$this->email\",\"$this->password\",1,$this->created_at)";
-		Executor::doit($sql);
+	public static function delById($id){
+		$stmt = self::db()->prepare("DELETE FROM " . self::$tablename . " WHERE id = :id");
+		$stmt->execute(['id' => $id]);
 	}
 
 	public function del(){
-		$sql = "delete from ".self::$tablename." where id=$this->id";
-		Executor::doit($sql);
+		self::delById($this->id);
 	}
 
 	public function update(){
-		$sql = "update ".self::$tablename." set name=\"$this->name\",lastname=\"$this->lastname\",email=\"$this->email\",is_admin=\"$this->is_admin\",is_mesero=\"$this->is_mesero\",is_cajero=\"$this->is_cajero\" where id=$this->id";
-		Executor::doit($sql);
+		$stmt = self::db()->prepare(
+			"UPDATE " . self::$tablename . " SET name = :name, lastname = :lastname, username = :username, " .
+			"email = :email, is_active = :is_active, is_admin = :is_admin, is_mesero = :is_mesero, is_cajero = :is_cajero WHERE id = :id"
+		);
+		$stmt->execute([
+			'name' => $this->name,
+			'lastname' => $this->lastname,
+			'username' => $this->username,
+			'email' => $this->email,
+			'is_active' => $this->is_active ? 1 : 0,
+			'is_admin' => $this->is_admin ? 1 : 0,
+			'is_mesero' => $this->is_mesero ? 1 : 0,
+			'is_cajero' => $this->is_cajero ? 1 : 0,
+			'id' => $this->id,
+		]);
 	}
 
-	public function update_password(){
-		$sql = "update ".self::$tablename." set password=\"$this->password\" where id=$this->id";
-		Executor::doit($sql);
+	public function update_passwd(){
+		$stmt = self::db()->prepare("UPDATE " . self::$tablename . " SET password = :password WHERE id = :id");
+		$stmt->execute(['password' => $this->password, 'id' => $this->id]);
 	}
 
 	public static function getById($id){
-		$sql = "select * from ".self::$tablename." where id=$id";
-		$query = Executor::doit($sql);
-		return Model::one($query[0],new UserData());
+		$stmt = self::db()->prepare("SELECT * FROM " . self::$tablename . " WHERE id = :id");
+		$stmt->execute(['id' => $id]);
+		$stmt->setFetchMode(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
+		return $stmt->fetch() ?: null;
 	}
 
-	public static function getByMail($mail){
-		$sql = "select * from ".self::$tablename." where email=\"$mail\"";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new UserData());
+	public static function getByUsername($username){
+		$stmt = self::db()->prepare("SELECT * FROM " . self::$tablename . " WHERE username = :u");
+		$stmt->execute(['u' => $username]);
+		$stmt->setFetchMode(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
+		return $stmt->fetch() ?: null;
 	}
-
 
 	public static function getAll(){
-		$sql = "select * from ".self::$tablename;
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new UserData());
+		$stmt = self::db()->query("SELECT * FROM " . self::$tablename . " ORDER BY id ASC");
+		return $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
+	}
+
+	public static function getAllActive(){
+		$stmt = self::db()->query("SELECT * FROM " . self::$tablename . " WHERE is_active = 1 ORDER BY name ASC");
+		return $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
 	}
 
 	public static function getAllMeseros(){
-		$sql = "select * from ".self::$tablename." where is_mesero=1";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new UserData());
+		$stmt = self::db()->query("SELECT * FROM " . self::$tablename . " WHERE is_active = 1 AND is_mesero = 1 ORDER BY name ASC");
+		$res = $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
+		if (empty($res)) {
+			// Fallback si no hay meseros especificos marcados
+			$stmt = self::db()->query("SELECT * FROM " . self::$tablename . " WHERE is_active = 1 ORDER BY name ASC");
+			$res = $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
+		}
+		return $res;
 	}
-
 
 	public static function getLike($q){
-		$sql = "select * from ".self::$tablename." where name like '%$q%'";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new UserData());
+		$stmt = self::db()->prepare("SELECT * FROM " . self::$tablename . " WHERE name LIKE :q OR username LIKE :q");
+		$stmt->execute(['q' => "%$q%"]);
+		return $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
 	}
-
-
 }
-
-?>

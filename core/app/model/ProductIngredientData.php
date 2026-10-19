@@ -1,124 +1,66 @@
 <?php
+/**
+ * Modelo ProductIngredientData - Receta / Relacion producto e ingrediente
+ */
 class ProductIngredientData {
 	public static $tablename = "product_ingredient";
 
 	public $id;
 	public $product_id;
 	public $ingredient_id;
-	public $q;
-	public $is_required;
+	public $q = 1.0;
+	public $is_required = 1;
 
 	public function __construct(){
-
+		$this->product_id = null;
+		$this->ingredient_id = null;
+		$this->q = 1.0;
+		$this->is_required = 1;
 	}
 
-	public function getIngredient(){ return IngredientData::getById($this->ingredient_id); }
+	private static function db(): \PDO {
+		return Database::getPdo();
+	}
+
+	public function getIngredient(){
+		return IngredientData::getById($this->ingredient_id);
+	}
 
 	public function add(){
-		$sql = "insert into ".self::$tablename." (product_id,ingredient_id,is_required,q) ";
-		$sql .= "value (\"$this->product_id\",\"$this->ingredient_id\",\"$this->is_required\",$this->q)";
-		return Executor::doit($sql);
+		$stmt = self::db()->prepare("INSERT INTO " . self::$tablename . " (product_id, ingredient_id, q, is_required) VALUES (:pid, :iid, :q, :req)");
+		$stmt->execute([
+			'pid' => $this->product_id,
+			'iid' => $this->ingredient_id,
+			'q' => (float)$this->q,
+			'req' => $this->is_required ? 1 : 0
+		]);
+		$this->id = self::db()->lastInsertId();
 	}
 
 	public static function delById($id){
-		$sql = "delete from ".self::$tablename." where id=$id";
-		Executor::doit($sql);
+		$stmt = self::db()->prepare("DELETE FROM " . self::$tablename . " WHERE id = :id");
+		$stmt->execute(['id' => $id]);
 	}
+
 	public function del(){
-		$sql = "delete from ".self::$tablename." where id=$this->id";
-		Executor::doit($sql);
+		self::delById($this->id);
 	}
-
-// partiendo de que ya tenemos creado un objecto ProductIngredientData previamente utilizamos el contexto
-	public function update(){
-		$sql = "update ".self::$tablename." set q=\"$this->q\",is_required=\"$this->is_required\" where id=$this->id";
-		Executor::doit($sql);
-	}
-
-	public function update_q(){
-		$sql = "update ".self::$tablename." set q=$this->q where id=$this->id";
-		Executor::doit($sql);
-	}
-
-
-	public function active(){
-		$sql = "update ".self::$tablename." set is_active=1 where id=$this->id";
-		Executor::doit($sql);
-	}
-
-	public function hide(){
-		$sql = "update ".self::$tablename." set is_active=0 where id=$this->id";
-		Executor::doit($sql);
-	}
-
 
 	public static function getById($id){
-		$sql = "select * from ".self::$tablename." where id=$id";
-		$query = Executor::doit($sql);
-		return Model::one($query[0],new ProductIngredientData());
+		$stmt = self::db()->prepare("SELECT * FROM " . self::$tablename . " WHERE id = :id");
+		$stmt->execute(['id' => $id]);
+		$stmt->setFetchMode(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
+		return $stmt->fetch() ?: null;
 	}
 
-
+	public static function getAllByProductId($productId){
+		$stmt = self::db()->prepare("SELECT * FROM " . self::$tablename . " WHERE product_id = :pid");
+		$stmt->execute(['pid' => $productId]);
+		return $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
+	}
 
 	public static function getAll(){
-		$sql = "select * from ".self::$tablename." ";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new ProductIngredientData());
+		$stmt = self::db()->query("SELECT * FROM " . self::$tablename . " ORDER BY id ASC");
+		return $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
 	}
-
-	public static function getAllByProductId($id){
-		$sql = "select * from ".self::$tablename." where product_id=".$id;
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new ProductIngredientData());
-	}
-
-	public static function getAllActive(){
-		$sql = "select * from ".self::$tablename."  where is_active=1";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new ProductIngredientData());
-	}
-
-
-	public static function getAllUnActive(){
-		$sql = "select * from ".self::$tablename."  where is_active=0";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new ProductIngredientData());
-	}
-
-
-
-	public static function getAllByPage($start_from,$limit){
-		$sql = "select * from ".self::$tablename." where id>=$start_from limit $limit";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new ProductIngredientData());
-	}
-
-
-	public static function getLike($p){
-		$sql = "select * from ".self::$tablename." where name like '%$p%' or id like '%$p%'";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new ProductIngredientData());
-	}
-
-	public static function getActiveLike($p){
-		$sql = "select * from ".self::$tablename." where (name like '%$p%' or id like '%$p%') and is_active=1 ";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new ProductIngredientData());
-	}
-
-
-	public static function getAllByUserId($user_id){
-		$sql = "select * from ".self::$tablename." where user_id=$user_id order by created_at desc";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new ProductIngredientData());
-	}
-
-
-
-
-
-
-
 }
-
-?>

@@ -1,0 +1,103 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Compras de Insumos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold mb-0">Compras</h3>
+    <div class="text-muted small">Historial de compras de insumos</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ base_url }}/supply" class="btn btn-success text-white">
+      <i class="bi bi-cart-plus me-1"></i> Nueva Compra / Abastecer
+    </a>
+    <a href="{{ base_url }}/inventory" class="btn btn-outline-info">
+      <i class="bi bi-box-seam me-1"></i> Ver Inventario
+    </a>
+  </div>
+</div>
+
+<!-- Tarjetas Resumen de Compras -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-6">
+    <div class="card h-100 shadow-sm rounded-3 bg-white p-3 border-0" style="border-left: 4px solid #3b82f6 !important;">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="text-muted small fw-semibold text-uppercase">Total Compras</span>
+        <span class="badge bg-primary-subtle text-primary p-2 rounded-circle fs-5"><i class="bi bi-receipt-cutoff"></i></span>
+      </div>
+      <div class="d-flex align-items-baseline gap-2">
+        <h2 class="fw-bold mb-0 text-dark">{{ totalPurchases }}</h2>
+        <small class="text-muted">compras completadas</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-6">
+    <div class="card h-100 shadow-sm rounded-3 bg-white p-3 border-0" style="border-left: 4px solid #10b981 !important;">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="text-muted small fw-semibold text-uppercase">Monto Total Invertido</span>
+        <span class="badge bg-success-subtle text-success p-2 rounded-circle fs-5"><i class="bi bi-currency-dollar"></i></span>
+      </div>
+      <div class="d-flex align-items-baseline gap-2">
+        <h2 class="fw-bold mb-0 text-success">${{ totalSpent|number_format(2) }}</h2>
+        <small class="text-muted">en insumos</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <h6 class="mb-0 fw-bold"><i class="bi bi-cart-check me-2 text-primary"></i>Compras</h6>
+    <span class="badge bg-secondary">{{ purchases|length }} compras</span>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover table-striped align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3"># Folio</th>
+            <th>Usuario / Responsable</th>
+            <th class="text-center">Artículos</th>
+            <th class="text-end">Monto Total</th>
+            <th class="text-center">Fecha y Hora</th>
+            <th class="text-center pe-3">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in purchases %}
+            <tr>
+              <td class="ps-3 fw-bold text-primary">#{{ p.id }}</td>
+              <td>
+                <span class="fw-semibold text-dark">{{ p.getUser().name|default('Administrador') }} {{ p.getUser().lastname|default('') }}</span>
+              </td>
+              <td class="text-center">
+                <span class="badge bg-info-subtle text-info border">{{ p.getItemsCount() }} insumos</span>
+              </td>
+              <td class="text-end fw-bold text-success fs-6">${{ p.getTotal()|number_format(2) }}</td>
+              <td class="text-center text-muted small">{{ p.created_at }}</td>
+              <td class="text-center pe-3">
+                <a href="{{ base_url }}/purchases/detail/{{ p.id }}" class="btn btn-xs btn-outline-primary" title="Ver Detalle de Compra">
+                  <i class="bi bi-eye me-1"></i> Detalle
+                </a>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="6" class="text-center py-5 text-muted">
+                <i class="bi bi-cart-x fs-1 d-block text-muted opacity-50 mb-2"></i>
+                <h5 class="fw-bold text-dark">No hay compras registradas</h5>
+                <p class="small text-muted mb-3">Reabastece insumos para comenzar a generar el historial de compras.</p>
+                <a href="{{ base_url }}/supply" class="btn btn-sm btn-success text-white">
+                  <i class="bi bi-cart-plus me-1"></i> Realizar Primer Abastecimiento
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

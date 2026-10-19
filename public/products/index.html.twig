@@ -1,0 +1,85 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Menú de Platillos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h3 class="fw-bold mb-0">Platillos</h3>
+    <div class="text-muted small">Catálogo de platillos y bebidas</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ base_url }}/products/categories" class="btn btn-outline-secondary">
+      <i class="bi bi-tags me-1"></i> Categorías
+    </a>
+    <a href="{{ base_url }}/products/new" class="btn btn-danger text-white">
+      <i class="bi bi-plus-circle me-1"></i> Nuevo Platillo
+    </a>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white py-3">
+    <h6 class="mb-0 fw-bold"><i class="bi bi-card-checklist me-2 text-danger"></i>Platillos</h6>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm table-striped table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Código</th>
+            <th>Nombre del Platillo</th>
+            <th>Categoría</th>
+            <th class="text-end">Precio Venta</th>
+            <th>Tiempo Prep.</th>
+            <th>Estado</th>
+            <th class="text-end pe-3">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in products %}
+            {% set cat = p.getCategory() %}
+            <tr>
+              <td class="ps-3 fw-bold"><span class="badge bg-light text-dark border">{{ p.code|default('S/C') }}</span></td>
+              <td>
+                <span class="fw-semibold">{{ p.name }}</span>
+                {% if p.description %}
+                  <div class="small text-muted">{{ p.description|slice(0, 45) }}</div>
+                {% endif %}
+              </td>
+              <td>
+                {% if cat %}
+                  <span class="badge bg-info text-dark">{{ cat.name }}</span>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="text-end fw-bold">${{ p.price_out|number_format(2) }}</td>
+              <td>{{ p.duration }} min</td>
+              <td>
+                {% if p.is_active %}
+                  <span class="badge bg-success">Activo</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inactivo</span>
+                {% endif %}
+              </td>
+              <td class="text-end pe-3">
+                <a href="{{ base_url }}/products/edit/{{ p.id }}" class="btn btn-warning btn-xs text-white" title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{{ base_url }}/products/delete/{{ p.id }}" class="btn btn-danger btn-xs" onclick="return confirm('¿Seguro de eliminar este platillo?');" title="Eliminar">
+                  <i class="bi bi-trash"></i>
+                </a>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">No hay platillos en el menú. ¡Agrega el primero!</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

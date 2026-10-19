@@ -1,106 +1,143 @@
 <?php
-class ProductData extends Extra {
+/**
+ * Modelo ProductData - Platillos y bebidas del menú
+ */
+class ProductData {
 	public static $tablename = "product";
 
-	public $id, $code, $name, $description, $preparation, $price_in, $price_out, $unit, $presentation, $duration, $use_ingredient, $is_active, $user_id, $category_id, $created_at;
+	public $id;
+	public $code;
+	public $name;
+	public $image;
+	public $description;
+	public $preparation;
+	public $price_in = 0.0;
+	public $price_out = 0.0;
+	public $unit;
+	public $presentation;
+	public $duration = 10;
+	public $use_ingredient = 0;
+	public $is_active = 1;
+	public $user_id;
+	public $category_id;
 
 	public function __construct(){
+		$this->code = "";
 		$this->name = "";
-		$this->price_in = "";
-		$this->price_out = "";
-		$this->unit = "";
-		$this->user_id = "";
-		$this->presentation = "0";
-		$this->created_at = "NOW()";
+		$this->image = null;
+		$this->description = "";
+		$this->preparation = "";
+		$this->price_in = 0.0;
+		$this->price_out = 0.0;
+		$this->unit = "pz";
+		$this->presentation = "";
+		$this->duration = 10;
+		$this->use_ingredient = 0;
+		$this->is_active = 1;
+		$this->user_id = 1;
+		$this->category_id = null;
+	}
+
+	private static function db(): \PDO {
+		return Database::getPdo();
 	}
 
 	public function add(){
-		$sql = "insert into ".self::$tablename." (code,name,category_id,price_out,user_id,unit,duration,description,preparation,use_ingredient) ";
-		$sql .= "value (\"$this->code\",\"$this->name\",\"$this->category_id\",\"$this->price_out\",$this->user_id,\"$this->unit\",\"$this->duration\",\"$this->description\",\"$this->preparation\",\"$this->use_ingredient\")";
-		return Executor::doit($sql);
-	}
-
-	public function del(){
-		$sql = "delete from ".self::$tablename." where id=$this->id";
-		Executor::doit($sql);
+		$stmt = self::db()->prepare(
+			"INSERT INTO " . self::$tablename . " (code, name, image, description, preparation, price_in, price_out, unit, presentation, duration, use_ingredient, is_active, user_id, category_id) " .
+			"VALUES (:code, :name, :image, :description, :preparation, :price_in, :price_out, :unit, :presentation, :duration, :use_ingredient, :is_active, :user_id, :category_id)"
+		);
+		$stmt->execute([
+			'code' => $this->code,
+			'name' => $this->name,
+			'image' => $this->image ?: null,
+			'description' => $this->description ?: '',
+			'preparation' => $this->preparation ?: '',
+			'price_in' => (float)($this->price_in ?: 0),
+			'price_out' => (float)($this->price_out ?: 0),
+			'unit' => $this->unit ?: 'pz',
+			'presentation' => $this->presentation ?: '',
+			'duration' => (int)($this->duration ?: 10),
+			'use_ingredient' => $this->use_ingredient ? 1 : 0,
+			'is_active' => $this->is_active ? 1 : 0,
+			'user_id' => $this->user_id ?: 1,
+			'category_id' => $this->category_id ?: null
+		]);
+		$this->id = self::db()->lastInsertId();
 	}
 
 	public function update(){
-		$sql = "update ".self::$tablename." set name=\"$this->name\",price_in=\"$this->price_in\",price_out=\"$this->price_out\",unit=\"$this->unit\",presentation=\"$this->presentation\",category_id=\"$this->category_id\",code=\"$this->code\",duration=\"$this->duration\",description=\"$this->description\",preparation=\"$this->preparation\",use_ingredient=\"$this->use_ingredient\" where id=$this->id";
-		Executor::doit($sql);
+		$stmt = self::db()->prepare(
+			"UPDATE " . self::$tablename . " SET code = :code, name = :name, image = :image, description = :description, " .
+			"preparation = :preparation, price_in = :price_in, price_out = :price_out, unit = :unit, " .
+			"presentation = :presentation, duration = :duration, is_active = :is_active, category_id = :category_id WHERE id = :id"
+		);
+		$stmt->execute([
+			'code' => $this->code,
+			'name' => $this->name,
+			'image' => $this->image ?: null,
+			'description' => $this->description ?: '',
+			'preparation' => $this->preparation ?: '',
+			'price_in' => (float)($this->price_in ?: 0),
+			'price_out' => (float)($this->price_out ?: 0),
+			'unit' => $this->unit ?: 'pz',
+			'presentation' => $this->presentation ?: '',
+			'duration' => (int)($this->duration ?: 10),
+			'is_active' => $this->is_active ? 1 : 0,
+			'category_id' => $this->category_id ?: null,
+			'id' => $this->id
+		]);
 	}
 
-	public function active(){
-		$sql = "update ".self::$tablename." set is_active=1 where id=$this->id";
-		Executor::doit($sql);
+	public static function delById($id){
+		$stmt = self::db()->prepare("DELETE FROM " . self::$tablename . " WHERE id = :id");
+		$stmt->execute(['id' => $id]);
 	}
 
-	public function hide(){
-		$sql = "update ".self::$tablename." set is_active=0 where id=$this->id";
-		Executor::doit($sql);
+	public function del(){
+		self::delById($this->id);
 	}
-
 
 	public static function getById($id){
-		$sql = "select * from ".self::$tablename." where id=$id";
-		$query = Executor::doit($sql);
-		return Model::one($query[0],new ProductData());
+		$stmt = self::db()->prepare("SELECT * FROM " . self::$tablename . " WHERE id = :id");
+		$stmt->execute(['id' => $id]);
+		$stmt->setFetchMode(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
+		return $stmt->fetch() ?: null;
 	}
 
-
 	public static function getAll(){
-		$sql = "select * from ".self::$tablename;
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new ProductData());
+		$stmt = self::db()->query("SELECT * FROM " . self::$tablename . " ORDER BY name ASC");
+		return $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
 	}
 
 	public static function getAllActive(){
-		$sql = "select * from ".self::$tablename." where product.is_active=1";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new ProductData());
+		$stmt = self::db()->query("SELECT * FROM " . self::$tablename . " WHERE is_active = 1 ORDER BY name ASC");
+		return $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
 	}
 
-
-	public static function getAllUnActive(){
-		$sql = "select * from ".self::$tablename." where product.is_active=0";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new ProductData());
+	public static function getActive(){
+		return self::getAllActive();
 	}
 
-
-
-	public static function getAllByPage($start_from,$limit){
-		$sql = "select * from ".self::$tablename." where id>=$start_from limit $limit";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new ProductData());
+	public static function getActiveLike($q){
+		$stmt = self::db()->prepare("SELECT * FROM " . self::$tablename . " WHERE is_active = 1 AND (name LIKE :q OR code LIKE :q) ORDER BY name ASC");
+		$stmt->execute(['q' => "%$q%"]);
+		return $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
 	}
 
-
-	public static function getLike($p){
-		$sql = "select * from ".self::$tablename." where name like '%$p%' or id like '%$p%'";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new ProductData());
+	public static function getLike($q){
+		$stmt = self::db()->prepare("SELECT * FROM " . self::$tablename . " WHERE name LIKE :q OR code LIKE :q ORDER BY name ASC");
+		$stmt->execute(['q' => "%$q%"]);
+		return $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
 	}
 
-	public static function getActiveLike($p){
-		$sql = "select * from ".self::$tablename." where (name like '%$p%' or id like '%$p%') and is_active=1 ";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new ProductData());
+	public static function getActiveByCategoryId($categoryId){
+		$stmt = self::db()->prepare("SELECT * FROM " . self::$tablename . " WHERE is_active = 1 AND category_id = :cid ORDER BY name ASC");
+		$stmt->execute(['cid' => $categoryId]);
+		return $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, self::class);
 	}
 
-
-	public static function getAllByUserId($user_id){
-		$sql = "select * from ".self::$tablename." where user_id=$user_id order by created_at desc";
-		$query = Executor::doit($sql);
-		return Model::many($query[0],new ProductData());
+	public function getCategory(){
+		return $this->category_id ? CategoryData::getById($this->category_id) : null;
 	}
-
-
-
-
-
-
-
 }
-
-?>

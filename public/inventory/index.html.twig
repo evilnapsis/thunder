@@ -1,0 +1,136 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Inventario de Ingredientes{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold mb-0">Inventario</h3>
+    <div class="text-muted small">Control de existencias en almacén</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ base_url }}/supply" class="btn btn-success text-white">
+      <i class="bi bi-cart-plus me-1"></i> Reabastecer Inventario
+    </a>
+    <a href="{{ base_url }}/purchases" class="btn btn-outline-primary">
+      <i class="bi bi-cart-check me-1"></i> Historial de Compras
+    </a>
+    <a href="{{ base_url }}/ingredients" class="btn btn-outline-secondary">
+      <i class="bi bi-gear me-1"></i> Insumos
+    </a>
+  </div>
+</div>
+
+<!-- Tarjetas Métricas de Inventario -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-4">
+    <div class="card h-100 shadow-sm rounded-3 bg-white p-3 border-0" style="border-left: 4px solid #3b82f6 !important;">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="text-muted small fw-semibold text-uppercase">Total Insumos</span>
+        <span class="badge bg-primary-subtle text-primary p-2 rounded-circle fs-5"><i class="bi bi-box-seam-fill"></i></span>
+      </div>
+      <div class="d-flex align-items-baseline gap-2">
+        <h2 class="fw-bold mb-0 text-dark">{{ totalIngredients }}</h2>
+        <small class="text-muted">registrados</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-4">
+    <div class="card h-100 shadow-sm rounded-3 bg-white p-3 border-0" style="border-left: 4px solid #10b981 !important;">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="text-muted small fw-semibold text-uppercase">Valor Total en Stock</span>
+        <span class="badge bg-success-subtle text-success p-2 rounded-circle fs-5"><i class="bi bi-currency-dollar"></i></span>
+      </div>
+      <div class="d-flex align-items-baseline gap-2">
+        <h2 class="fw-bold mb-0 text-success">${{ totalStockValue|number_format(2) }}</h2>
+        <small class="text-muted">estimado</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-4">
+    <div class="card h-100 shadow-sm rounded-3 bg-white p-3 border-0" style="border-left: 4px solid {% if lowStockCount > 0 %}#ef4444{% else %}#10b981{% endif %} !important;">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="text-muted small fw-semibold text-uppercase">Alertas de Stock Bajo</span>
+        <span class="badge {% if lowStockCount > 0 %}bg-danger-subtle text-danger{% else %}bg-success-subtle text-success{% endif %} p-2 rounded-circle fs-5">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </span>
+      </div>
+      <div class="d-flex align-items-baseline gap-2">
+        <h2 class="fw-bold mb-0 {% if lowStockCount > 0 %}text-danger{% else %}text-success{% endif %}">{{ lowStockCount }}</h2>
+        <small class="text-muted">insumos por agotar</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <h6 class="mb-0 fw-bold"><i class="bi bi-boxes me-2 text-primary"></i>Inventario en Almacén</h6>
+    <span class="badge bg-secondary">{{ items|length }} registros</span>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover table-striped align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Código</th>
+            <th>Ingrediente</th>
+            <th>Unidad</th>
+            <th class="text-center">Stock Disponible</th>
+            <th class="text-end">Costo Unit.</th>
+            <th class="text-end">Valor Stock</th>
+            <th class="text-center">Estado</th>
+            <th class="text-center pe-3">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            {% set ing = item.ingredient %}
+            {% set stock = item.stock %}
+            {% set val = item.stock_value %}
+            <tr>
+              <td class="ps-3 fw-bold text-secondary">#{{ ing.code }}</td>
+              <td class="fw-semibold text-dark">{{ ing.name }}</td>
+              <td><span class="badge bg-light text-dark border">{{ ing.unit }}</span></td>
+              <td class="text-center">
+                <span class="fs-6 fw-bold {% if stock <= 2 %}text-danger{% elseif stock <= 5 %}text-warning{% else %}text-success{% endif %}">
+                  {{ stock|number_format(2) }}
+                </span>
+              </td>
+              <td class="text-end text-dark">${{ ing.price_in|number_format(2) }}</td>
+              <td class="text-end fw-bold text-primary">${{ val|number_format(2) }}</td>
+              <td class="text-center">
+                {% if stock <= 2 %}
+                  <span class="badge bg-danger"><i class="bi bi-exclamation-octagon me-1"></i>Crítico</span>
+                {% elseif stock <= 5 %}
+                  <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Bajo</span>
+                {% else %}
+                  <span class="badge bg-success text-white"><i class="bi bi-check-circle me-1"></i>Suficiente</span>
+                {% endif %}
+              </td>
+              <td class="text-center pe-3">
+                <a href="{{ base_url }}/inventory/history/{{ ing.id }}" class="btn btn-xs btn-outline-info" title="Ver Historial de Movimientos">
+                  <i class="bi bi-clock-history me-1"></i> Historial
+                </a>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="8" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block text-muted opacity-50 mb-2"></i>
+                <h5 class="fw-bold text-dark">No hay ingredientes en inventario</h5>
+                <p class="small text-muted mb-3">Registra ingredientes e insumos para comenzar a controlar el stock.</p>
+                <a href="{{ base_url }}/ingredients/new" class="btn btn-sm btn-primary">
+                  <i class="bi bi-plus-circle me-1"></i> Crear Ingrediente
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

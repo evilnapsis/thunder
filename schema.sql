@@ -50,6 +50,7 @@ create table product(
 	price_out float,
 	unit varchar(255) not null,
 	presentation varchar(255) not null,
+	image varchar(255),
 	duration int, /* tiempo de preparacion en minutos */
 	use_ingredient boolean not null default 1,
 	is_active boolean not null default 1,
