@@ -45,3 +45,5 @@ else if(isset($_GET["opt"]) && $_GET["opt"]=="hide"){
 	header("Location: index.php?view=products&opt=all");
 }
 ?>
+
+
